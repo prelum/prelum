@@ -1,0 +1,41 @@
+{
+  "name": "prelum",
+  "version": "0.0.1",
+  "description": "Markdown in. Beautiful PDF out.",
+  "keywords": [
+    "markdown",
+    "pdf",
+    "cli",
+    "themes",
+    "mermaid",
+    "offline"
+  ],
+  "homepage": "https://prelum.github.io",
+  "bugs": "https://github.com/prelum/prelum/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/prelum/prelum.git"
+  },
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "prelum": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "themes"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "node src/cli.ts",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run typecheck && npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "typescript": "7.0.2"
+  }
+}

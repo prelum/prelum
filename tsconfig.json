@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    // Output: modern JS that Node >= 22 runs natively, as ESM.
+    "target": "es2023",
+    "module": "nodenext",
+    "rootDir": "src",
+    "outDir": "dist",
+    "declaration": true,
+    "types": ["node"],
+
+    // Strictness.
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+
+    // Keep every file runnable by `node file.ts` (type stripping) and by tsc alike:
+    // imports use the real `.ts` extension, tsc rewrites them to `.js` on build.
+    "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true,
+    "rewriteRelativeImportExtensions": true,
+
+    "skipLibCheck": true
+  },
+  "include": ["src"]
+}
