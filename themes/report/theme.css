@@ -1,0 +1,224 @@
+/* report — the default theme. Feasibility studies, proposals, consulting.
+   Editorial serif titles (Newsreader) over a grotesque body (Schibsted Grotesk). */
+@page {
+  size: A4;
+  margin: 24mm 20mm 22mm;
+}
+@page :first {
+  margin: 0;
+}
+
+:root {
+  --ink: #1c1a17;
+  --text: #2b2925;
+  --muted: #6b655c;
+  --rule: #e2ddd4;
+  --paper: #f6f3ee;
+  --accent: #c8402a;
+  --code-bg: #f1eee8;
+  --serif: "Newsreader", Georgia, serif;
+  --sans: "Schibsted Grotesk", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+html {
+  font-family: var(--sans);
+  font-size: 10.5pt;
+  line-height: 1.65;
+  color: var(--text);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+body {
+  margin: 0;
+}
+
+/* Headings */
+h1,
+h2,
+h3 {
+  color: var(--ink);
+  break-after: avoid;
+}
+h1 {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 26pt;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  margin: 0 0 16px;
+}
+h2 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 16pt;
+  line-height: 1.2;
+  margin: 26px 0 8px;
+}
+h3 {
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 11pt;
+  margin: 18px 0 6px;
+}
+p {
+  margin: 0 0 10px;
+  orphans: 3;
+  widows: 3;
+  text-wrap: pretty;
+}
+a {
+  color: var(--accent);
+}
+strong {
+  color: var(--ink);
+}
+
+/* Lists, quotes */
+ul,
+ol {
+  padding-left: 18px;
+  margin: 0 0 10px;
+}
+li {
+  margin: 0 0 3px;
+}
+blockquote {
+  margin: 6px 0 14px;
+  padding: 10px 14px;
+  background: var(--paper);
+  border-left: 2px solid var(--accent);
+  font-size: 10pt;
+}
+blockquote p:last-child {
+  margin: 0;
+}
+hr {
+  border: none;
+  border-top: 1px solid var(--rule);
+  margin: 22px 0;
+}
+
+/* Code */
+code {
+  font-family: var(--mono);
+  font-size: 0.88em;
+  background: var(--code-bg);
+  padding: 1px 4px;
+}
+pre {
+  background: var(--ink);
+  color: #e8e3da;
+  padding: 12px 14px;
+  font-size: 8.5pt;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  break-inside: avoid;
+}
+pre code {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+  color: inherit;
+}
+
+/* Tables — rows never split; the header repeats on every page */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 6px 0 16px;
+  font-size: 9.5pt;
+  font-variant-numeric: tabular-nums;
+}
+thead {
+  display: table-header-group;
+}
+tr {
+  break-inside: avoid;
+}
+th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--ink);
+  padding: 6px 6px 6px 0;
+  border-bottom: 1px solid var(--ink);
+}
+td {
+  padding: 6px 6px 6px 0;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+}
+td[align="right"],
+th[align="right"] {
+  text-align: right;
+}
+
+/* Images and diagrams */
+img,
+svg,
+.mermaid {
+  max-width: 100%;
+  break-inside: avoid;
+}
+.mermaid {
+  display: flex;
+  justify-content: center;
+  margin: 10px 0 16px;
+}
+figure {
+  margin: 10px 0 16px;
+  break-inside: avoid;
+}
+figcaption {
+  font-size: 8.5pt;
+  color: var(--muted);
+  margin-top: 6px;
+}
+
+/* Cover */
+.prelum-cover {
+  height: 297mm;
+  padding: 34mm 24mm 22mm;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  break-after: page;
+}
+.prelum-cover .meta-top {
+  display: flex;
+  justify-content: space-between;
+  font-size: 7.5pt;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.prelum-cover .mark {
+  width: 10px;
+  height: 10px;
+  background: var(--accent);
+  margin-bottom: 18px;
+}
+.prelum-cover h1 {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 44pt;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  margin: 0;
+  color: var(--ink);
+}
+.prelum-cover .subtitle {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 15pt;
+  color: var(--muted);
+  margin-top: 12px;
+}
+.prelum-cover .meta-bottom {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid var(--ink);
+  padding-top: 8px;
+  font-size: 8pt;
+  color: var(--muted);
+}
