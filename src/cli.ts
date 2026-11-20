@@ -211,7 +211,12 @@ function fail(lines: string[], code: ExitCode, p: Palette = paintErr): ExitCode 
   return code;
 }
 
-const display = (path: string) => relative(process.cwd(), path) || path;
+/** The shorter of the relative and absolute paths: "out/a.pdf", but "/tmp/a.pdf" over "../../../tmp/a.pdf". */
+function display(path: string): string {
+  const absolute = resolve(path);
+  const fromHere = relative(process.cwd(), absolute);
+  return fromHere && fromHere.length < absolute.length ? fromHere : absolute;
+}
 
 const firstLine = (error: unknown) =>
   (error instanceof Error ? error.message : String(error)).split('\n')[0] ?? '';
