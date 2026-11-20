@@ -25,6 +25,12 @@ describe('buildHtml', () => {
     expect((await buildHtml(md, { lang: 'en' })).html).toContain('--prelum-page: "Page"');
   });
 
+  it('uses defaultLang only when nothing else sets the language', async () => {
+    const page = (html: string) => /--prelum-page: "([^"]+)"/.exec(html)?.[1];
+    expect(page((await buildHtml('Hi.', { defaultLang: 'pt' })).html)).toBe('Página');
+    expect(page((await buildHtml(doc('lang: en'), { defaultLang: 'pt' })).html)).toBe('Page');
+  });
+
   it('prints the title once when the cover already shows it', async () => {
     const { html } = await buildHtml(doc('title: Feasibility study\ncover: true'));
     expect(count(html, '<h1')).toBe(1);

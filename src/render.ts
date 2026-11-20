@@ -18,6 +18,8 @@ export type RenderOptions = {
   cover?: boolean;
   /** Language of the text Prelum adds to the PDF ("Page 2 of 4"). Wins over the frontmatter. */
   lang?: Lang;
+  /** Used only when neither `lang` nor the frontmatter say anything (e.g. the terminal's LANG). */
+  defaultLang?: Lang;
   format?: PaperFormat;
   /** Extra CSS after the theme: the advanced escape hatch. */
   css?: string;
@@ -38,7 +40,7 @@ export type Document = {
   diagrams: number;
 };
 
-export type RenderResult = Omit<Document, 'html'> & {
+export type RenderResult = Document & {
   pdf: Uint8Array;
   pages: number;
   browser: string;
@@ -55,14 +57,14 @@ const PAGE_LABEL: Record<Lang, [page: string, of: string]> = {
 
 export async function render(markdown: string, options: RenderOptions = {}): Promise<RenderResult> {
   const started = performance.now();
-  const { html, ...doc } = await buildHtml(markdown, options);
+  const doc = await buildHtml(markdown, options);
 
   const dir = await mkdtemp(join(tmpdir(), 'prelum-'));
   const { browser, label } = await launchBrowser();
   try {
     // A real file, not setContent: an about:blank page may not load file:// images.
     const htmlPath = join(dir, 'document.html');
-    await writeFile(htmlPath, html);
+    await writeFile(htmlPath, doc.html);
     const page = await browser.newPage();
     await page.goto(pathToFileURL(htmlPath).href, { waitUntil: 'load' });
 
@@ -98,7 +100,7 @@ export async function buildHtml(markdown: string, options: RenderOptions = {}): 
 
   const theme = options.theme ?? fm.theme ?? DEFAULT_THEME;
   const cover = options.cover ?? fm.cover ?? false;
-  const lang = options.lang ?? fm.lang ?? 'en';
+  const lang = options.lang ?? fm.lang ?? options.defaultLang ?? 'en';
   const format = options.format ?? 'A4';
   const title = fm.title ?? md.firstHeading ?? '';
   const themeCss = await loadTheme(theme);

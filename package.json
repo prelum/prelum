@@ -27,7 +27,7 @@
     "vendor"
   ],
   "engines": {
-    "node": ">=22"
+    "node": ">=22.12"
   },
   "scripts": {
     "dev": "node src/cli.ts",
