@@ -1,12 +1,11 @@
 {
+  // Type-checks everything (src + tests) and emits nothing. The build uses tsconfig.build.json.
   "compilerOptions": {
-    // Output: modern JS that Node >= 22 runs natively, as ESM.
+    // Modern JS that Node >= 22 runs natively, as ESM.
     "target": "es2023",
     "module": "nodenext",
-    "rootDir": "src",
-    "outDir": "dist",
-    "declaration": true,
     "types": ["node"],
+    "noEmit": true,
 
     // Strictness.
     "strict": true,
@@ -20,5 +19,5 @@
 
     "skipLibCheck": true
   },
-  "include": ["src"]
+  "include": ["src", "tests"]
 }
