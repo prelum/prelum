@@ -1,11 +1,74 @@
 /* report — the default theme. Feasibility studies, proposals, consulting.
    Editorial serif titles (Newsreader) over a grotesque body (Schibsted Grotesk). */
+
+/* Page: client and title on top, title and "Page X of Y" at the bottom.
+   The texts come from --prelum-* properties that Prelum sets for each document. */
 @page {
-  size: A4;
   margin: 24mm 20mm 22mm;
+
+  @top-left {
+    content: var(--prelum-client);
+  }
+  @top-right {
+    content: var(--prelum-title);
+    text-align: right;
+  }
+  @bottom-left {
+    content: var(--prelum-title);
+  }
+  @bottom-right {
+    content: var(--prelum-page) " " counter(page) " " var(--prelum-of) " " counter(pages);
+    text-align: right;
+  }
 }
+@page {
+  @top-left {
+    font: 7.5pt var(--sans);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    vertical-align: bottom;
+    padding-bottom: 6mm;
+  }
+  @top-right {
+    font: 7.5pt var(--sans);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    vertical-align: bottom;
+    padding-bottom: 6mm;
+  }
+  @bottom-left {
+    font: 7.5pt var(--sans);
+    color: var(--muted);
+    vertical-align: top;
+    padding-top: 4mm;
+    border-top: 1px solid var(--rule);
+  }
+  @bottom-right {
+    font: 7.5pt var(--sans);
+    color: var(--muted);
+    vertical-align: top;
+    padding-top: 4mm;
+    border-top: 1px solid var(--rule);
+  }
+}
+/* The cover is a full-bleed page: no margins, and margin: 0 alone does not hide the boxes. */
 @page :first {
   margin: 0;
+
+  @top-left {
+    content: none;
+  }
+  @top-right {
+    content: none;
+  }
+  @bottom-left {
+    content: none;
+  }
+  @bottom-right {
+    content: none;
+  }
 }
 
 :root {
@@ -19,6 +82,10 @@
   --serif: "Newsreader", Georgia, serif;
   --sans: "Schibsted Grotesk", system-ui, sans-serif;
   --mono: "JetBrains Mono", ui-monospace, monospace;
+  /* Mermaid reads these */
+  --diagram-fill: var(--paper);
+  --diagram-stroke: var(--ink);
+  --diagram-text: var(--ink);
 }
 html {
   font-family: var(--sans);
@@ -176,7 +243,7 @@ figcaption {
 
 /* Cover */
 .prelum-cover {
-  height: 297mm;
+  height: var(--page-height);
   padding: 34mm 24mm 22mm;
   box-sizing: border-box;
   display: flex;

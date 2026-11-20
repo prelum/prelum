@@ -1,3 +1,4 @@
+import type { Element, Nodes as HastNodes, Root as HastRoot } from 'hast';
 import type { Nodes, Root } from 'mdast';
 import rehypeSlug from 'rehype-slug';
 import rehypeStringify from 'rehype-stringify';
@@ -22,9 +23,15 @@ export type Frontmatter = {
 };
 
 export type MarkdownResult = {
+  /** The document body, without the leading title (see `leadingTitle`). */
   html: string;
+  /**
+   * A `#` heading that opens the document, kept apart so the renderer can drop it
+   * when the cover already shows the same title.
+   */
+  leadingTitle: { text: string; html: string } | undefined;
   frontmatter: Frontmatter;
-  /** Text of the first `#` heading: the title when the frontmatter has none. */
+  /** Text of the first `#` heading anywhere: the title when the frontmatter has none. */
   firstHeading: string | undefined;
   words: number;
   diagrams: number;
@@ -33,14 +40,21 @@ export type MarkdownResult = {
 type Findings = {
   yaml: string;
   firstHeading: string | undefined;
+  leading: Element | undefined;
   words: number;
   diagrams: number;
 };
 
 export async function markdownToHtml(markdown: string): Promise<MarkdownResult> {
-  const found: Findings = { yaml: '', firstHeading: undefined, words: 0, diagrams: 0 };
+  const found: Findings = {
+    yaml: '',
+    firstHeading: undefined,
+    leading: undefined,
+    words: 0,
+    diagrams: 0,
+  };
 
-  const file = await unified()
+  const processor = unified()
     .use(remarkParse)
     .use(remarkFrontmatter, ['yaml'])
     .use(remarkGfm)
@@ -48,11 +62,21 @@ export async function markdownToHtml(markdown: string): Promise<MarkdownResult> 
     // Raw HTML passes through, as it did with pandoc (e.g. a manual page break).
     .use(remarkRehype, { allowDangerousHtml: true })
     .use(rehypeSlug)
-    .use(rehypeStringify, { allowDangerousHtml: true })
-    .process(markdown);
+    .use(() => (tree: HastRoot) => {
+      replaceMermaidBlocks(tree);
+      found.leading = takeLeadingTitle(tree);
+    })
+    .use(rehypeStringify, { allowDangerousHtml: true });
+
+  const file = await processor.process(markdown);
+  const leading = found.leading;
 
   return {
     html: String(file),
+    leadingTitle: leading && {
+      text: hastText(leading),
+      html: processor.stringify({ type: 'root', children: [leading] }),
+    },
     frontmatter: readFrontmatter(found.yaml),
     firstHeading: found.firstHeading,
     words: found.words,
@@ -60,8 +84,43 @@ export async function markdownToHtml(markdown: string): Promise<MarkdownResult> 
   };
 }
 
-// One pass over the markdown tree collects everything the CLI reports
-// and turns ```mermaid fences into <div class="mermaid">.
+/**
+ * ```mermaid fences arrive as <pre><code class="language-mermaid">. The whole <pre> becomes
+ * <div class="mermaid">: left inside a <pre>, the diagram would get the theme's code block style.
+ */
+function replaceMermaidBlocks(parent: HastRoot | Element): void {
+  parent.children.forEach((child, index) => {
+    if (child.type !== 'element') return;
+    const code = child.tagName === 'pre' ? child.children[0] : undefined;
+    const classes = code?.type === 'element' ? code.properties.className : undefined;
+    if (code && Array.isArray(classes) && classes.includes('language-mermaid')) {
+      parent.children[index] = {
+        type: 'element',
+        tagName: 'div',
+        properties: { className: ['mermaid'] },
+        children: [{ type: 'text', value: hastText(code) }],
+      };
+    } else {
+      replaceMermaidBlocks(child);
+    }
+  });
+}
+
+/** Removes and returns the first element of the document when it is an `<h1>`. */
+function takeLeadingTitle(tree: HastRoot): Element | undefined {
+  const index = tree.children.findIndex((node) => node.type === 'element');
+  const first = tree.children[index];
+  if (first?.type !== 'element' || first.tagName !== 'h1') return undefined;
+  tree.children.splice(index, 1);
+  return first;
+}
+
+function hastText(node: HastNodes): string {
+  if (node.type === 'text') return node.value;
+  return 'children' in node ? node.children.map(hastText).join('') : '';
+}
+
+// One pass over the markdown tree collects everything the CLI reports.
 function inspect(tree: Root, found: Findings): void {
   walk(tree, (node) => {
     switch (node.type) {
@@ -77,15 +136,7 @@ function inspect(tree: Root, found: Findings): void {
         found.words += node.value.split(/\s+/).filter(Boolean).length;
         break;
       case 'code':
-        if (node.lang === 'mermaid') {
-          found.diagrams += 1;
-          // remark-rehype reads these hints instead of building <pre><code>.
-          node.data = {
-            hName: 'div',
-            hProperties: { className: ['mermaid'] },
-            hChildren: [{ type: 'text', value: node.value }],
-          };
-        }
+        if (node.lang === 'mermaid') found.diagrams += 1;
         break;
     }
   });

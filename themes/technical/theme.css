@@ -1,11 +1,40 @@
 /* technical — documentation, implementation reports, runbooks.
    All sans (Schibsted Grotesk), blue accent, dark code blocks. */
+
+/* Page: document name on top over a rule, "Page X of Y" at the bottom right.
+   The texts come from --prelum-* properties that Prelum sets for each document. */
 @page {
-  size: A4;
   margin: 22mm 18mm 20mm;
+
+  @top-left {
+    content: var(--prelum-title);
+    font: 7.5pt var(--sans);
+    color: var(--muted);
+    vertical-align: bottom;
+    padding-bottom: 4mm;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 4mm;
+  }
+  @bottom-right {
+    content: var(--prelum-page) " " counter(page) " " var(--prelum-of) " " counter(pages);
+    font: 7.5pt var(--sans);
+    color: var(--muted);
+    text-align: right;
+    vertical-align: top;
+    padding-top: 4mm;
+  }
 }
+/* The cover is a full-bleed page: no margins, and margin: 0 alone does not hide the boxes. */
 @page :first {
   margin: 0;
+
+  @top-left {
+    content: none;
+    border: none;
+  }
+  @bottom-right {
+    content: none;
+  }
 }
 
 :root {
@@ -17,6 +46,10 @@
   --code-bg: #f1eee8;
   --sans: "Schibsted Grotesk", system-ui, sans-serif;
   --mono: "JetBrains Mono", ui-monospace, monospace;
+  /* Mermaid reads these */
+  --diagram-fill: #eef3fa;
+  --diagram-stroke: var(--accent);
+  --diagram-text: var(--ink);
 }
 html {
   font-family: var(--sans);
@@ -144,7 +177,7 @@ svg,
 
 /* Cover */
 .prelum-cover {
-  height: 297mm;
+  height: var(--page-height);
   padding: 30mm 22mm 20mm;
   box-sizing: border-box;
   display: flex;
@@ -166,6 +199,13 @@ svg,
   font-size: 13pt;
   color: var(--muted);
   margin-top: 12px;
+}
+.prelum-cover .meta-top {
+  font-family: var(--mono);
+  font-size: 8pt;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 .prelum-cover .meta-bottom {
   display: flex;

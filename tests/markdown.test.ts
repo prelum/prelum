@@ -56,6 +56,9 @@ describe('markdownToHtml', () => {
 
     expect(diagrams).toBe(2);
     expect(html.match(/<div class="mermaid">/g)).toHaveLength(2);
+    expect(html).toContain('<div class="mermaid">flowchart LR\n  A --> B\n</div>');
+    // Not wrapped in <pre>: the theme would paint it as a code block (dark background).
+    expect(html).not.toContain('<pre><div');
     expect(html).not.toContain('language-mermaid');
     expect(html).toContain('<code class="language-js">');
   });
@@ -76,6 +79,23 @@ describe('markdownToHtml', () => {
 
     expect(firstHeading).toBe('Estudo de viabilidade');
     expect(words).toBe(3 + 3 + 6);
+  });
+
+  it('keeps an opening # heading apart from the body', async () => {
+    const md = '---\ntitle: X\n---\n\n# Estudo de *viabilidade*\n\nBody.\n\n# Second';
+    const { leadingTitle, html } = await markdownToHtml(md);
+
+    expect(leadingTitle?.text).toBe('Estudo de viabilidade');
+    expect(leadingTitle?.html).toBe(
+      '<h1 id="estudo-de-viabilidade">Estudo de <em>viabilidade</em></h1>',
+    );
+    expect(html).not.toContain('Estudo de');
+    expect(html).toContain('<h1 id="second">Second</h1>');
+  });
+
+  it('has no leading title when the document opens with something else', async () => {
+    const { leadingTitle } = await markdownToHtml('Intro.\n\n# Title');
+    expect(leadingTitle).toBeUndefined();
   });
 
   it('passes raw HTML through', async () => {
