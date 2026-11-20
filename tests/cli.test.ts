@@ -3,6 +3,7 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { BROWSER_TEST_TIMEOUT } from './helpers.ts';
 
 const CLI = new URL('../src/cli.ts', import.meta.url).pathname;
 
@@ -87,7 +88,9 @@ describe('prelum CLI', () => {
   });
 
   // Opens a real browser.
-  it('writes the PDF next to the .md and reports in Portuguese', { timeout: 30_000 }, async () => {
+  it('writes the PDF next to the .md and reports in Portuguese', {
+    timeout: BROWSER_TEST_TIMEOUT,
+  }, async () => {
     await writeFile(
       join(dir, 'relatorio.md'),
       '---\ncover: true\n---\n\n# Relatório\n\nUm dois três.',

@@ -2,6 +2,7 @@ import { tmpdir } from 'node:os';
 import { describe, expect, it } from 'vitest';
 import { buildHtml, render } from '../src/render.ts';
 import { ThemeNotFoundError } from '../src/themes.ts';
+import { BROWSER_TEST_TIMEOUT } from './helpers.ts';
 
 const doc = (frontmatter: string, body = '# Feasibility study\n\nBody.') =>
   `---\n${frontmatter}\n---\n\n${body}`;
@@ -70,7 +71,9 @@ describe('buildHtml', () => {
 
 // These open a real browser (Chrome, Edge or the Playwright cache).
 describe('render', () => {
-  it('prints a PDF with a cover and reports missing images', { timeout: 30_000 }, async () => {
+  it('prints a PDF with a cover and reports missing images', {
+    timeout: BROWSER_TEST_TIMEOUT,
+  }, async () => {
     const md = doc(
       'title: Smoke test\ncover: true',
       '# Smoke test\n\n![Missing](nope.png)\n\n```mermaid\nflowchart LR\n  A --> B\n```',
@@ -83,7 +86,7 @@ describe('render', () => {
     expect(result.warnings).toEqual([{ kind: 'missing-image', src: 'nope.png' }]);
   });
 
-  it('reports a broken diagram instead of failing', { timeout: 30_000 }, async () => {
+  it('reports a broken diagram instead of failing', { timeout: BROWSER_TEST_TIMEOUT }, async () => {
     const result = await render('```mermaid\nthis is not a diagram\n```');
 
     expect(result.pages).toBe(1);
