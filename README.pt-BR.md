@@ -116,6 +116,10 @@ Defina [`SOURCE_DATE_EPOCH`](https://reproducible-builds.org/docs/source-date-ep
 
 O Markdown passa pelo [unified](https://unifiedjs.com) (remark e rehype) e vira HTML. Entram a folha de estilo do tema, as fontes embutidas e a configuração da página, e um Chromium sem interface imprime: as margin boxes do CSS de página desenham cabeçalho e rodapé, e o Mermaid desenha os diagramas nas cores do tema.
 
+## Contribuir e apoiar
+
+Issues e pull requests são bem-vindos: o [guia de contribuição](https://github.com/prelum/.github/blob/main/CONTRIBUTING.md) (em inglês) explica o ambiente e as verificações. Se o prelum economiza o seu tempo, dá para apoiar pelo [GitHub Sponsors](https://github.com/sponsors/Fransuelton).
+
 ## Licença
 
 [MIT](LICENSE). As fontes embutidas, Newsreader, Schibsted Grotesk e JetBrains Mono, estão sob a [SIL Open Font License](fonts/newsreader/OFL.txt).
