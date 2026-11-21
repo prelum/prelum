@@ -4,17 +4,17 @@
 /* Page: client and title on top, title and "Page X of Y" at the bottom.
    The texts come from --prelum-* properties that Prelum sets for each document. */
 @page {
-  margin: 24mm 20mm 22mm;
+  margin: 24mm 32mm 22mm; /* 11pt body at this width: about 80 characters per line */
 
   @top-left {
-    content: var(--prelum-client);
+    content: var(--prelum-header-client);
   }
   @top-right {
-    content: var(--prelum-title);
+    content: var(--prelum-header-title);
     text-align: right;
   }
   @bottom-left {
-    content: var(--prelum-title);
+    content: ""; /* the title is already in the header; the box stays for the rule above it */
   }
   @bottom-right {
     content: var(--prelum-page) " " counter(page) " " var(--prelum-of) " " counter(pages);
@@ -90,7 +90,7 @@
 }
 html {
   font-family: var(--sans);
-  font-size: 10.5pt;
+  font-size: 11pt;
   line-height: 1.65;
   color: var(--text);
   -webkit-print-color-adjust: exact;
@@ -134,8 +134,12 @@ p {
   widows: 3;
   text-wrap: pretty;
 }
+/* Links in the text colour: in a business document, red reads as a warning. */
 a {
-  color: var(--accent);
+  color: inherit;
+  text-decoration-color: var(--muted);
+  text-decoration-thickness: 0.5pt;
+  text-underline-offset: 2px;
 }
 strong {
   color: var(--ink);
@@ -280,7 +284,7 @@ figcaption::before {
 .prelum-cover {
   page: cover;
   height: var(--page-height);
-  padding: 34mm 24mm 22mm;
+  padding: 34mm 32mm 22mm;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;

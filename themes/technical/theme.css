@@ -4,7 +4,7 @@
 /* Page: document name on top over a rule, "Page X of Y" at the bottom right.
    The texts come from --prelum-* properties that Prelum sets for each document. */
 @page {
-  margin: 22mm 18mm 20mm;
+  margin: 22mm 26mm 20mm; /* 10.5pt body at this width: about 90 characters per line */
 
   @top-left {
     content: var(--prelum-title);
@@ -54,7 +54,7 @@
 }
 html {
   font-family: var(--sans);
-  font-size: 10pt;
+  font-size: 10.5pt;
   line-height: 1.6;
   color: var(--text);
   -webkit-print-color-adjust: exact;
@@ -224,7 +224,7 @@ figcaption::before {
 .prelum-cover {
   page: cover;
   height: var(--page-height);
-  padding: 30mm 22mm 20mm;
+  padding: 30mm 26mm 20mm;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;

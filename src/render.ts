@@ -152,11 +152,14 @@ ${cover ? coverHtml({ ...fm, title }, lang) : ''}
  */
 function documentCss(doc: { format: PaperFormat; lang: Lang; title: string; client: string }) {
   const labels = LABELS[doc.lang];
+  const header = fitHeader(doc.client, doc.title);
   return `@page { size: ${doc.format}; }
 :root {
   --page-height: ${PAGE_HEIGHT[doc.format]};
   --prelum-title: ${cssString(doc.title)};
   --prelum-client: ${cssString(doc.client)};
+  --prelum-header-title: ${cssString(header.title)};
+  --prelum-header-client: ${cssString(header.client)};
   --prelum-page: ${cssString(labels.page)};
   --prelum-of: ${cssString(labels.of)};
   --prelum-figure: ${cssString(labels.figure)};
@@ -222,4 +225,30 @@ export function countPages(pdf: Uint8Array): number {
       .toString('latin1')
       .match(/\/Type\s*\/Page\b/g) ?? []
   ).length;
+}
+
+/**
+ * Client and title for a one-line header. Chrome ignores overflow and ellipsis in @page margin
+ * boxes, so long texts would wrap onto two lines (or overlap): they are shortened here instead.
+ * About 70 characters fit on the line; the longer side gives way first, down to a readable
+ * minimum. The full title still goes on the cover, in the bookmarks and in the metadata.
+ */
+export function fitHeader(
+  client: string,
+  title: string,
+  room = 70,
+): { client: string; title: string } {
+  if (client.length + title.length <= room) return { client, title };
+  const clientRoom = Math.min(client.length, Math.max(30, room - title.length));
+  const titleRoom = Math.min(title.length, Math.max(40, room - clientRoom));
+  return { client: shorten(client, clientRoom), title: shorten(title, titleRoom) };
+}
+
+function shorten(text: string, room: number): string {
+  if (text.length <= room) return text;
+  // Cut at a word boundary when one is close, and never leave a dangling separator.
+  const cut = text.slice(0, room - 1);
+  const space = cut.lastIndexOf(' ');
+  const base = space > room * 0.6 ? cut.slice(0, space) : cut;
+  return `${base.replace(/[\s·,;:—–-]+$/u, '')}…`;
 }

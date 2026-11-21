@@ -1,6 +1,6 @@
 import { tmpdir } from 'node:os';
 import { describe, expect, it } from 'vitest';
-import { buildHtml, render } from '../src/render.ts';
+import { buildHtml, fitHeader, render } from '../src/render.ts';
 import { ThemeNotFoundError } from '../src/themes.ts';
 import { BROWSER_TEST_TIMEOUT } from './helpers.ts';
 
@@ -100,5 +100,34 @@ describe('render', () => {
 
     expect(result.pages).toBe(1);
     expect(result.warnings).toMatchObject([{ kind: 'diagram-error' }]);
+  });
+});
+
+describe('fitHeader', () => {
+  it('keeps a header that fits', () => {
+    expect(fitHeader('Acme Ltda', 'Feasibility study')).toEqual({
+      client: 'Acme Ltda',
+      title: 'Feasibility study',
+    });
+  });
+
+  it('shortens the longer side first, at a word, with an ellipsis', () => {
+    const { client, title } = fitHeader(
+      'Acme Ltda',
+      'Implementation report for the new self-service customer portal and its billing back office',
+    );
+    expect(client).toBe('Acme Ltda');
+    expect(title.endsWith('…')).toBe(true);
+    expect(client.length + title.length).toBeLessThanOrEqual(70);
+    expect(title).not.toMatch(/\s…$/);
+  });
+
+  it('gives each side a readable minimum when both are long', () => {
+    const { client, title } = fitHeader(
+      'Companhia Brasileira de Distribuição e Logística Integrada S.A.',
+      'Relatório de implementação do novo portal de autoatendimento · Fase 2',
+    );
+    expect(client).toBe('Companhia Brasileira de…');
+    expect(title).toBe('Relatório de implementação do novo…');
   });
 });
