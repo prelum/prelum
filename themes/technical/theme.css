@@ -101,6 +101,11 @@ a {
   color: var(--accent);
 }
 
+/* Schibsted Grotesk gives punctuation a digit's width in tabular figures ("1 .", "14 ,400"),
+   and Chrome uses tabular figures for list markers by default. */
+li::marker {
+  font-variant-numeric: normal;
+}
 /* Task lists (- [x]): the checkbox takes the bullet's place */
 li.task-list-item {
   list-style: none;
@@ -147,7 +152,6 @@ table {
   border-collapse: collapse;
   margin: 6px 0 16px;
   font-size: 9pt;
-  font-variant-numeric: tabular-nums;
 }
 thead {
   display: table-header-group;
