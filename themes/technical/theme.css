@@ -100,6 +100,15 @@ a {
   color: var(--accent);
 }
 
+/* Task lists (- [x]): the checkbox takes the bullet's place */
+li.task-list-item {
+  list-style: none;
+}
+li.task-list-item input {
+  margin: 0 6px 0 -18px;
+  vertical-align: -1px;
+}
+
 /* Code */
 code {
   font-family: var(--mono);

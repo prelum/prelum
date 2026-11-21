@@ -149,6 +149,14 @@ ol {
 li {
   margin: 0 0 3px;
 }
+/* Task lists (- [x]): the checkbox takes the bullet's place */
+li.task-list-item {
+  list-style: none;
+}
+li.task-list-item input {
+  margin: 0 6px 0 -18px;
+  vertical-align: -1px;
+}
 blockquote {
   margin: 6px 0 14px;
   padding: 10px 14px;
