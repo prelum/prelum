@@ -8,6 +8,7 @@ import { BrowserNotFoundError } from './browser.ts';
 import { colorDepth, type Palette, palette } from './colors.ts';
 import { detectLang, type Messages, messages } from './i18n.ts';
 import type { Lang } from './markdown.ts';
+import { sourceDateEpoch } from './pdf-metadata.ts';
 import { type PaperFormat, type RenderResult, render } from './render.ts';
 import { DEFAULT_THEME, listThemes, ThemeNotFoundError } from './themes.ts';
 
@@ -151,6 +152,7 @@ async function convert(file: string, s: Settings): Promise<ExitCode> {
       css: s.css,
       baseDir: dirname(resolve(file)),
       defaultLang: s.lang,
+      creationDate: sourceDateEpoch(process.env),
     });
   } catch (error) {
     if (error instanceof ThemeNotFoundError) {
