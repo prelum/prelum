@@ -53,7 +53,14 @@ export type RenderResult = Document & {
 };
 
 const MERMAID_JS = fileURLToPath(new URL('../vendor/mermaid.min.js', import.meta.url));
-const PAGE_HEIGHT: Record<PaperFormat, string> = { A4: '297mm', Letter: '279.4mm' };
+const PAGE_MM: Record<PaperFormat, { width: number; height: number }> = {
+  A4: { width: 210, height: 297 },
+  Letter: { width: 215.9, height: 279.4 },
+};
+const PAGE_HEIGHT: Record<PaperFormat, string> = {
+  A4: `${PAGE_MM.A4.height}mm`,
+  Letter: `${PAGE_MM.Letter.height}mm`,
+};
 // The words Prelum adds to the document itself.
 const LABELS: Record<Lang, { page: string; of: string; figure: string }> = {
   en: { page: 'Page', of: 'of', figure: 'Figure' },
@@ -84,6 +91,7 @@ export async function render(markdown: string, options: RenderOptions = {}): Pro
       if (error) warnings.push({ kind: 'diagram-error', message: error });
     }
     await page.evaluate(() => document.fonts.ready);
+    await fitFigures(page, doc.format);
 
     const printed = await page.pdf({
       printBackground: true,
@@ -251,4 +259,102 @@ function shorten(text: string, room: number): string {
   const space = cut.lastIndexOf(' ');
   const base = space > room * 0.6 ? cut.slice(0, space) : cut;
   return `${base.replace(/[\s·,;:—–-]+$/u, '')}…`;
+}
+
+/** Figures never shrink below this, nor below this share of their own height. */
+const FIT_MIN_MM = 55;
+const FIT_MIN_SHARE = 0.5;
+/** A heading needs this much room after it, or it moves to the next page with its text. */
+const KEEP_WITH_NEXT_MM = 12;
+
+/**
+ * A figure never splits across pages, so one that does not fit at the bottom of a page moves
+ * whole to the next and leaves a gap. This lays the page out at the printed width and walks the
+ * blocks as print would, page by page: blocks that do not split (list items, code, diagrams,
+ * quotes) and headings that would sit alone at the bottom move to the next page. When a figure
+ * does not fit and the room left holds at least half of it (and the readable minimum), the
+ * figure shrinks to fit; otherwise it moves too. The spacers only serve the measurement and are
+ * removed. Breaks are never forced: if the simulation is off, the result is the plain layout.
+ */
+async function fitFigures(page: Page, format: PaperFormat): Promise<void> {
+  if (!(await page.evaluate(() => document.querySelector('figure img') !== null))) return;
+
+  // The theme decides the margins: read them from its @page rule.
+  const margins = await page.evaluate(() => {
+    for (const sheet of document.styleSheets) {
+      for (const rule of sheet.cssRules) {
+        if (rule instanceof CSSPageRule && rule.selectorText === '' && rule.style.marginTop) {
+          const { marginTop, marginRight, marginBottom, marginLeft } = rule.style;
+          return [marginTop, marginRight, marginBottom, marginLeft];
+        }
+      }
+    }
+    return undefined;
+  });
+  const mm = margins?.map((value) =>
+    value.endsWith('mm') ? Number.parseFloat(value) : Number.NaN,
+  );
+  if (!mm || mm.some(Number.isNaN)) return; // margins we cannot read: keep the plain layout
+  const [top = 0, right = 0, bottom = 0, left = 0] = mm;
+
+  const pxPerMm = 96 / 25.4;
+  const size = PAGE_MM[format];
+  await page.emulateMedia({ media: 'print' });
+  await page.setViewportSize({
+    width: Math.round((size.width - left - right) * pxPerMm),
+    height: 1000,
+  });
+
+  await page.evaluate(
+    ({ contentMm, minMm, minShare, keepMm }) => {
+      const pxPerMm = 96 / 25.4;
+      const pageHeight = contentMm * pxPerMm;
+      const UNITS = 'h1, h2, h3, h4, p, li, figure, div.mermaid, pre, blockquote, table';
+      const main = document.querySelector('main');
+      if (!main) return;
+      const origin = main.getBoundingClientRect().top + window.scrollY;
+      const units = [...main.querySelectorAll<HTMLElement>(UNITS)].filter(
+        (el) => !el.parentElement?.closest(UNITS) || el.matches('li'),
+      );
+      const spacers: HTMLElement[] = [];
+      const pushToNextPage = (el: HTMLElement, at: number, pageEnd: number) => {
+        const spacer = document.createElement('div');
+        spacer.style.height = `${pageEnd - at}px`;
+        el.before(spacer);
+        spacers.push(spacer);
+      };
+
+      for (const el of units) {
+        const box = el.getBoundingClientRect();
+        const at = box.top + window.scrollY - origin;
+        const end = at + box.height;
+        const pageEnd = Math.ceil((at + 1) / pageHeight) * pageHeight;
+
+        if (el.matches('h1, h2, h3, h4')) {
+          if (end + keepMm * pxPerMm > pageEnd) pushToNextPage(el, at, pageEnd);
+          continue;
+        }
+        // Fits, cannot fit any page anyway, or splits across pages on its own.
+        if (end <= pageEnd || box.height >= pageHeight || el.matches('p, table')) continue;
+
+        const img = el.matches('figure') ? el.querySelector('img') : null;
+        if (img) {
+          const imgHeight = img.getBoundingClientRect().height;
+          const room = pageEnd - at - (box.height - imgHeight) - 6;
+          if (room >= Math.max(minMm * pxPerMm, imgHeight * minShare)) {
+            img.style.maxHeight = `${room}px`;
+            continue;
+          }
+        }
+        pushToNextPage(el, at, pageEnd);
+      }
+      for (const spacer of spacers) spacer.remove();
+    },
+    {
+      contentMm: size.height - top - bottom,
+      minMm: FIT_MIN_MM,
+      minShare: FIT_MIN_SHARE,
+      keepMm: KEEP_WITH_NEXT_MM,
+    },
+  );
 }

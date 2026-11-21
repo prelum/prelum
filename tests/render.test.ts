@@ -131,3 +131,24 @@ describe('fitHeader', () => {
     expect(title).toBe('Relatório de implementação do novo…');
   });
 });
+
+// Open a real browser. A4 report: about 251 mm of content height per page.
+describe('figures at the bottom of a page', () => {
+  const tallImage = `data:image/svg+xml;base64,${Buffer.from(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="1000"><rect width="600" height="1000" fill="#ddd"/></svg>',
+  ).toString('base64')}`;
+  const page = (paragraphs: number) =>
+    `${Array.from({ length: paragraphs }, (_, i) => `Paragraph ${i + 1}, one line.`).join('\n\n')}\n\n![A tall figure](${tallImage})`;
+
+  it('shrinks a figure that almost fits', { timeout: BROWSER_TEST_TIMEOUT }, async () => {
+    // 16 lines leave about 110 mm: the 136 mm figure would move to page 2, but more than half fits.
+    expect((await render(page(16))).pages).toBe(1);
+  });
+
+  it('moves a figure when too little of it would fit', {
+    timeout: BROWSER_TEST_TIMEOUT,
+  }, async () => {
+    // 24 lines leave less than the readable minimum: the figure moves whole to the next page.
+    expect((await render(page(24))).pages).toBe(2);
+  });
+});
