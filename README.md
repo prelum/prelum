@@ -114,6 +114,10 @@ Set [`SOURCE_DATE_EPOCH`](https://reproducible-builds.org/docs/source-date-epoch
 
 Markdown goes through [unified](https://unifiedjs.com) (remark and rehype) to HTML. The theme stylesheet, the bundled fonts and the page setup are added, and a headless Chromium prints the page: CSS page margin boxes draw the headers and footers, and Mermaid draws the diagrams in the theme's colors.
 
+## Contributing and support
+
+Issues and pull requests are welcome: the [contributing guide](https://github.com/prelum/.github/blob/main/CONTRIBUTING.md) explains the setup and the checks. If prelum saves you time, you can support it on [GitHub Sponsors](https://github.com/sponsors/Fransuelton).
+
 ## License
 
 [MIT](LICENSE). The bundled fonts, Newsreader, Schibsted Grotesk and JetBrains Mono, are under the [SIL Open Font License](fonts/newsreader/OFL.txt).
