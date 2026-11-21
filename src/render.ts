@@ -6,6 +6,7 @@ import type { Page } from 'playwright-core';
 import { launchBrowser } from './browser.ts';
 import { coverHtml } from './cover.ts';
 import { cssString, escapeHtml } from './escape.ts';
+import { fontFaceCss } from './fonts.ts';
 import { type Lang, markdownToHtml } from './markdown.ts';
 import { DEFAULT_THEME, loadTheme } from './themes.ts';
 
@@ -72,6 +73,8 @@ export async function render(markdown: string, options: RenderOptions = {}): Pro
       kind: 'missing-image',
       src,
     }));
+    // Fonts first: Mermaid sizes its boxes by measuring text, so it must measure the real font.
+    await page.evaluate(() => document.fonts.ready);
     if (doc.diagrams > 0) {
       const error = await drawDiagrams(page);
       if (error) warnings.push({ kind: 'diagram-error', message: error });
@@ -117,6 +120,7 @@ export async function buildHtml(markdown: string, options: RenderOptions = {}): 
 <base href="${escapeHtml(baseHref)}">
 <title>${escapeHtml(title)}</title>
 <style>
+${fontFaceCss()}
 ${themeCss}
 ${documentCss({ format, lang, title, client: fm.client ?? '' })}
 ${options.css ?? ''}
@@ -169,6 +173,9 @@ async function drawDiagrams(page: Page): Promise<string | undefined> {
       style.getPropertyValue(name).trim() || fallback;
     const fill = read('--diagram-fill', '#ffffff');
     const stroke = read('--diagram-stroke', '#1c1a17');
+    const font = read('--sans', 'sans-serif');
+    // Fonts load on first use, and the page may not have used this one yet.
+    await document.fonts.load(`12px ${font}`);
 
     const { mermaid } = globalThis as unknown as { mermaid: MermaidApi };
     mermaid.initialize({
@@ -176,7 +183,7 @@ async function drawDiagrams(page: Page): Promise<string | undefined> {
       securityLevel: 'strict',
       theme: 'base',
       themeVariables: {
-        fontFamily: read('--sans', 'sans-serif'),
+        fontFamily: font,
         fontSize: '12px',
         primaryColor: fill,
         secondaryColor: fill,
