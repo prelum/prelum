@@ -64,6 +64,7 @@ export async function markdownToHtml(markdown: string): Promise<MarkdownResult> 
     .use(rehypeSlug)
     .use(() => (tree: HastRoot) => {
       replaceMermaidBlocks(tree);
+      makeFigures(tree);
       found.leading = takeLeadingTitle(tree);
     })
     .use(rehypeStringify, { allowDangerousHtml: true });
@@ -82,6 +83,65 @@ export async function markdownToHtml(markdown: string): Promise<MarkdownResult> 
     words: found.words,
     diagrams: found.diagrams,
   };
+}
+
+/** A height in millimetres, as written in an image title: `![Caption](a.png "90mm")`. */
+const MM_HEIGHT = /^\d+(\.\d+)?mm$/;
+
+/**
+ * An image alone in its paragraph becomes a figure: the alt text is its caption (numbered by
+ * the theme), and a title like "90mm" caps its height. Images inside text stay inline.
+ */
+function makeFigures(parent: HastRoot | Element): void {
+  parent.children.forEach((child, index) => {
+    if (child.type !== 'element') return;
+    const image = child.tagName === 'p' ? soleImage(child) : undefined;
+    if (!image) {
+      makeFigures(child);
+      return;
+    }
+
+    const { alt, title, ...properties } = image.properties;
+    const caption = typeof alt === 'string' ? alt.trim() : '';
+    const height = typeof title === 'string' && MM_HEIGHT.test(title) ? title : undefined;
+    const img: Element = {
+      ...image,
+      properties: {
+        ...properties,
+        alt: caption,
+        ...(title !== undefined && !height ? { title } : {}),
+        ...(height ? { style: `max-height: ${height}` } : {}),
+      },
+    };
+
+    parent.children[index] = {
+      type: 'element',
+      tagName: 'figure',
+      properties: {},
+      children: caption
+        ? [
+            img,
+            {
+              type: 'element',
+              tagName: 'figcaption',
+              properties: {},
+              children: [{ type: 'text', value: caption }],
+            },
+          ]
+        : [img],
+    };
+  });
+}
+
+/** The paragraph's only content, when that is one image (whitespace aside). */
+function soleImage(paragraph: Element): Element | undefined {
+  const content = paragraph.children.filter(
+    (node) => !(node.type === 'text' && node.value.trim() === ''),
+  );
+  const [only] = content;
+  return content.length === 1 && only?.type === 'element' && only.tagName === 'img'
+    ? only
+    : undefined;
 }
 
 /**
