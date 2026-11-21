@@ -24,8 +24,9 @@
     padding-top: 4mm;
   }
 }
-/* The cover is a full-bleed page: no margins, and margin: 0 alone does not hide the boxes. */
-@page :first {
+/* The cover page (a named page, so documents without a cover keep their margins on page 1):
+   full-bleed, and margin: 0 alone does not hide the boxes. */
+@page cover {
   margin: 0;
 
   @top-left {
@@ -177,6 +178,7 @@ svg,
 
 /* Cover */
 .prelum-cover {
+  page: cover;
   height: var(--page-height);
   padding: 30mm 22mm 20mm;
   box-sizing: border-box;
