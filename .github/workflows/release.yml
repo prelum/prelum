@@ -1,0 +1,39 @@
+name: Release
+
+# Publishing a GitHub release (tag v1.2.3) publishes that version to npm.
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  # npm trusted publishing: GitHub hands this run a short-lived identity, and npm accepts it
+  # only from this workflow in this repository. No npm token is stored anywhere.
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    # Settings → Environments → npm can require your approval before anything is published.
+    environment: npm
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: Check that the tag matches package.json
+        run: |
+          version="v$(node -p "require('./package.json').version")"
+          if [ "$version" != "$GITHUB_REF_NAME" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match package.json ($version)."
+            exit 1
+          fi
+
+      - run: npm ci
+
+      # prepublishOnly runs lint, typecheck, tests and build first.
+      # Trusted publishing adds the provenance statement on its own.
+      - run: npm publish
