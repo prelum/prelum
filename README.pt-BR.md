@@ -42,7 +42,7 @@ npx prelum themes                                   # lista os temas
 O Prelum precisa do Node 22 ou mais novo e de um navegador baseado em Chromium: ele usa o Chrome ou o Edge que você já tem, então nada grande é baixado. Sem nenhum dos dois, rode uma vez `npx playwright install chromium`.
 
 ```
-  prelum■ 0.1.0
+  prelum■ 0.2.0
 
   ✓ markdown    157 palavras
   ✓ mermaid     1 diagrama
