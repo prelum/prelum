@@ -8,6 +8,7 @@ import { coverHtml } from './cover.ts';
 import { cssString, escapeHtml } from './escape.ts';
 import { fontFaceCss } from './fonts.ts';
 import { type Lang, markdownToHtml } from './markdown.ts';
+import { stampMetadata } from './pdf-metadata.ts';
 import { DEFAULT_THEME, loadTheme } from './themes.ts';
 
 export type PaperFormat = 'A4' | 'Letter';
@@ -26,6 +27,8 @@ export type RenderOptions = {
   css?: string;
   /** Folder that relative image paths resolve against. Defaults to the current folder. */
   baseDir?: string;
+  /** Date stamped in the PDF metadata. Defaults to now; fix it for reproducible output. */
+  creationDate?: Date;
 };
 
 export type Warning =
@@ -81,7 +84,8 @@ export async function render(markdown: string, options: RenderOptions = {}): Pro
     }
     await page.evaluate(() => document.fonts.ready);
 
-    const pdf = await page.pdf({ printBackground: true, preferCSSPageSize: true });
+    const printed = await page.pdf({ printBackground: true, preferCSSPageSize: true });
+    const pdf = stampMetadata(printed, options.creationDate);
     return {
       ...doc,
       pdf,

@@ -39,7 +39,8 @@ jobs:
 
       - name: Render the examples
         if: matrix.node == 24
-        run: node dist/cli.js examples/*.md --out example-pdfs/
+        # Stamp the commit's date, not the clock's: the same commit always prints the same PDFs.
+        run: SOURCE_DATE_EPOCH=$(git log -1 --format=%ct) node dist/cli.js examples/*.md --out example-pdfs/
 
       - name: Attach the PDFs to this run
         if: matrix.node == 24
