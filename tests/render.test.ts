@@ -59,6 +59,11 @@ describe('buildHtml', () => {
     expect(html).toContain('--page-height: 279.4mm');
   });
 
+  it('names figures in the document language', async () => {
+    expect((await buildHtml(doc('lang: pt'))).html).toContain('--prelum-figure: "Figura"');
+    expect((await buildHtml(doc('lang: en'))).html).toContain('--prelum-figure: "Figure"');
+  });
+
   it('escapes the title inside CSS', async () => {
     const { html } = await buildHtml(doc('title: Say "hi"'));
     expect(html).toContain('--prelum-title: "Say \\"hi\\""');
@@ -84,6 +89,10 @@ describe('render', () => {
     expect(result.pages).toBe(2);
     expect(result.diagrams).toBe(1);
     expect(result.warnings).toEqual([{ kind: 'missing-image', src: 'nope.png' }]);
+    // Bookmarks for the side panel of PDF readers, and an accessible (tagged) PDF.
+    const text = Buffer.from(result.pdf).toString('latin1');
+    expect(text).toContain('/Outlines');
+    expect(text).toContain('/StructTreeRoot');
   });
 
   it('reports a broken diagram instead of failing', { timeout: BROWSER_TEST_TIMEOUT }, async () => {

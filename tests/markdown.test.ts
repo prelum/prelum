@@ -98,6 +98,36 @@ describe('markdownToHtml', () => {
     expect(leadingTitle).toBeUndefined();
   });
 
+  it('turns an image alone in its paragraph into a captioned figure', async () => {
+    const { html } = await markdownToHtml('![The panel, overdue invoices first](prints/a.png)');
+    expect(html).toBe(
+      '<figure><img src="prints/a.png" alt="The panel, overdue invoices first">' +
+        '<figcaption>The panel, overdue invoices first</figcaption></figure>',
+    );
+  });
+
+  it('reads a height in millimetres from the image title', async () => {
+    const { html } = await markdownToHtml('![Phone](prints/b.png "90mm")');
+    expect(html).toContain('<img src="prints/b.png" alt="Phone" style="max-height: 90mm">');
+    expect(html).not.toContain('title=');
+  });
+
+  it('keeps any other title as a title', async () => {
+    const { html } = await markdownToHtml('![Logo](logo.png "Our logo")');
+    expect(html).toContain('title="Our logo"');
+    expect(html).not.toContain('style=');
+  });
+
+  it('leaves images inside text inline', async () => {
+    const { html } = await markdownToHtml('Click ![icon](i.png) to save.');
+    expect(html).not.toContain('<figure>');
+  });
+
+  it('makes a figure without a caption when there is no alt text', async () => {
+    const { html } = await markdownToHtml('![](prints/c.png)');
+    expect(html).toContain('<figure><img src="prints/c.png" alt=""></figure>');
+  });
+
   it('passes raw HTML through', async () => {
     const { html } = await markdownToHtml('<div class="page-break"></div>');
     expect(html).toContain('<div class="page-break"></div>');

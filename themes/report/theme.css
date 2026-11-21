@@ -244,14 +244,36 @@ svg,
   justify-content: center;
   margin: 10px 0 16px;
 }
+/* Figures: an image alone in its paragraph. Numbered only when it has a caption. */
+main {
+  counter-reset: figure;
+}
 figure {
-  margin: 10px 0 16px;
+  margin: 14px 0 18px;
+  text-align: center;
   break-inside: avoid;
 }
+figure img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 120mm; /* a title like "90mm" sets another limit */
+  margin: 0 auto;
+  border: 1px solid var(--rule);
+}
+figure:has(figcaption) {
+  counter-increment: figure;
+}
 figcaption {
+  margin-top: 8px;
   font-size: 8.5pt;
   color: var(--muted);
-  margin-top: 6px;
+}
+figcaption::before {
+  content: var(--prelum-figure) " " counter(figure) " · ";
+  color: var(--ink);
+  font-weight: 600;
 }
 
 /* Cover */

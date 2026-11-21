@@ -54,9 +54,10 @@ export type RenderResult = Document & {
 
 const MERMAID_JS = fileURLToPath(new URL('../vendor/mermaid.min.js', import.meta.url));
 const PAGE_HEIGHT: Record<PaperFormat, string> = { A4: '297mm', Letter: '279.4mm' };
-const PAGE_LABEL: Record<Lang, [page: string, of: string]> = {
-  en: ['Page', 'of'],
-  pt: ['Página', 'de'],
+// The words Prelum adds to the document itself.
+const LABELS: Record<Lang, { page: string; of: string; figure: string }> = {
+  en: { page: 'Page', of: 'of', figure: 'Figure' },
+  pt: { page: 'Página', of: 'de', figure: 'Figura' },
 };
 
 export async function render(markdown: string, options: RenderOptions = {}): Promise<RenderResult> {
@@ -84,7 +85,13 @@ export async function render(markdown: string, options: RenderOptions = {}): Pro
     }
     await page.evaluate(() => document.fonts.ready);
 
-    const printed = await page.pdf({ printBackground: true, preferCSSPageSize: true });
+    const printed = await page.pdf({
+      printBackground: true,
+      preferCSSPageSize: true,
+      // Bookmarks from the headings (the side panel in PDF readers), and a tagged, accessible PDF.
+      outline: true,
+      tagged: true,
+    });
     const pdf = stampMetadata(printed, options.creationDate);
     return {
       ...doc,
@@ -144,14 +151,15 @@ ${cover ? coverHtml({ ...fm, title }, lang) : ''}
  * @page margin boxes and read the text from these properties.
  */
 function documentCss(doc: { format: PaperFormat; lang: Lang; title: string; client: string }) {
-  const [page, of] = PAGE_LABEL[doc.lang];
+  const labels = LABELS[doc.lang];
   return `@page { size: ${doc.format}; }
 :root {
   --page-height: ${PAGE_HEIGHT[doc.format]};
   --prelum-title: ${cssString(doc.title)};
   --prelum-client: ${cssString(doc.client)};
-  --prelum-page: ${cssString(page)};
-  --prelum-of: ${cssString(of)};
+  --prelum-page: ${cssString(labels.page)};
+  --prelum-of: ${cssString(labels.of)};
+  --prelum-figure: ${cssString(labels.figure)};
 }`;
 }
 
