@@ -35,6 +35,7 @@
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc",
     "test": "vitest run",
+    "examples": "node scripts/examples.ts",
     "lint": "biome check",
     "fix": "biome check --write",
     "prepublishOnly": "npm run lint && npm run typecheck && npm test && npm run build"
@@ -44,6 +45,7 @@
     "@types/hast": "3.0.5",
     "@types/mdast": "4.0.4",
     "@types/node": "22.20.5",
+    "pdf-to-img": "7.0.2",
     "typescript": "7.0.2",
     "vitest": "5.1.0"
   },
