@@ -108,7 +108,7 @@ lang: en                        # en | pt: "Page 2 of 4" or "Página 2 de 4", an
 
 Exit codes: `0` done · `1` input error (file, theme, frontmatter) · `2` render error · `3` no browser found.
 
-Set [`SOURCE_DATE_EPOCH`](https://reproducible-builds.org/docs/source-date-epoch/) to stamp a fixed date in the PDF: the same file then prints the same bytes, which keeps generated PDFs stable in git.
+Set [`SOURCE_DATE_EPOCH`](https://reproducible-builds.org/docs/source-date-epoch/) to stamp a fixed date in the PDF: the same file then prints the same bytes with the same browser version, which keeps generated PDFs stable in git. A different Chrome version can break lines differently; pinning the browser is tracked in [#15](https://github.com/prelum/prelum/issues/15).
 
 ## How it works
 
