@@ -110,7 +110,7 @@ lang: pt                        # en | pt: "Página 2 de 4" ou "Page 2 of 4", e 
 
 Códigos de saída: `0` pronto · `1` erro de entrada (arquivo, tema, frontmatter) · `2` erro ao gerar · `3` nenhum navegador encontrado.
 
-Defina [`SOURCE_DATE_EPOCH`](https://reproducible-builds.org/docs/source-date-epoch/) para gravar uma data fixa no PDF: o mesmo arquivo passa a gerar os mesmos bytes, o que deixa PDFs gerados estáveis no git.
+Defina [`SOURCE_DATE_EPOCH`](https://reproducible-builds.org/docs/source-date-epoch/) para gravar uma data fixa no PDF: o mesmo arquivo passa a gerar os mesmos bytes na mesma versão do navegador, o que deixa PDFs gerados estáveis no git. Outra versão do Chrome pode quebrar linhas de outro jeito; fixar o navegador está na [#17](https://github.com/prelum/prelum/issues/17).
 
 ## Como funciona
 
