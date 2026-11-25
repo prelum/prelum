@@ -1,24 +1,19 @@
 #!/usr/bin/env node
-import { readFileSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { basename, dirname, extname, join, relative, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { YAMLParseError } from 'yaml';
-import { BrowserNotFoundError } from './browser.ts';
+import { BrowserNotFoundError, PinnedBrowserError } from './browser.ts';
 import { colorDepth, type Palette, palette } from './colors.ts';
 import { detectLang, type Messages, messages } from './i18n.ts';
 import type { Lang } from './markdown.ts';
 import { sourceDateEpoch } from './pdf-metadata.ts';
 import { type PaperFormat, type RenderResult, render } from './render.ts';
 import { DEFAULT_THEME, listThemes, ThemeNotFoundError } from './themes.ts';
+import { version } from './version.ts';
 
 const EXIT = { ok: 0, input: 1, render: 2, browser: 3 } as const;
 type ExitCode = (typeof EXIT)[keyof typeof EXIT];
-
-// `../package.json` resolves the same from src/ (dev) and dist/ (published).
-const { version } = JSON.parse(
-  readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
-) as { version: string };
 
 const out = (text = '') => process.stdout.write(`${text}\n`);
 const paint = palette(colorDepth(process.stdout, process.env));
@@ -33,6 +28,7 @@ type Settings = {
   css: string | undefined;
   out: string | undefined;
   html: boolean;
+  pinnedBrowser: boolean;
 };
 
 async function main(argv: string[], env: NodeJS.ProcessEnv): Promise<ExitCode> {
@@ -102,6 +98,7 @@ async function main(argv: string[], env: NodeJS.ProcessEnv): Promise<ExitCode> {
     css,
     out: values.out,
     html: values.html ?? false,
+    pinnedBrowser: values['pinned-browser'] ?? false,
   };
 
   out();
@@ -127,6 +124,7 @@ function parse(argv: string[]) {
       cover: { type: 'boolean' },
       css: { type: 'string' },
       html: { type: 'boolean' },
+      'pinned-browser': { type: 'boolean' },
       lang: { type: 'string' },
       help: { type: 'boolean', short: 'h' },
       version: { type: 'boolean', short: 'v' },
@@ -153,6 +151,7 @@ async function convert(file: string, s: Settings): Promise<ExitCode> {
       baseDir: dirname(resolve(file)),
       defaultLang: s.lang,
       creationDate: sourceDateEpoch(process.env),
+      pinnedBrowser: s.pinnedBrowser,
     });
   } catch (error) {
     if (error instanceof ThemeNotFoundError) {
@@ -162,6 +161,10 @@ async function convert(file: string, s: Settings): Promise<ExitCode> {
       return fail(t.badFrontmatter(file, firstLine(error)), EXIT.input);
     }
     if (error instanceof BrowserNotFoundError) return fail(t.browserMissing(), EXIT.browser);
+    if (error instanceof PinnedBrowserError) {
+      const { expected, found } = error;
+      return fail(t.pinnedBrowser(expected.version, expected.playwright, found), EXIT.browser);
+    }
     return fail(t.renderFailed(file, firstLine(error)), EXIT.render);
   }
 
@@ -185,6 +188,7 @@ async function convert(file: string, s: Settings): Promise<ExitCode> {
   }
   row(ok, t.label.theme, result.theme);
   row(ok, t.label.pages, t.pages(result.pages, result.cover));
+  row(ok, t.label.browser, result.browser);
   if (s.html) row(ok, t.label.html, display(htmlTarget));
   out();
   out(`  ${paint.error('■')} ${t.ready(display(target), result.ms)}`);

@@ -27,6 +27,7 @@ export function messages(lang: Lang) {
         image: 'imagem',
         theme: 'tema',
         pages: 'paginação',
+        browser: 'navegador',
         html: 'html',
       },
       words: (count: number) => plural(count, 'palavra', 'palavras'),
@@ -52,6 +53,12 @@ export function messages(lang: Lang) {
         'nenhum navegador Chromium encontrado (Chrome, Edge ou Chromium)',
         'Execute: npx playwright install chromium   (baixa o Chromium uma vez, ~150 MB)',
         'Ou aponte PRELUM_CHROME para o executável de um navegador Chromium.',
+      ],
+      pinnedBrowser: (expected: string, playwright: string, found?: string) => [
+        found
+          ? `o navegador fixado é o Chromium ${found}, mas o playwright-core ${playwright} espera o ${expected}`
+          : `navegador fixado não instalado: Chromium ${expected} (do playwright-core ${playwright})`,
+        `Execute: npx playwright@${playwright} install chromium   (baixa essa versão uma vez, ~150 MB)`,
       ],
       renderFailed: (file: string, message: string) => [`falha ao gerar ${file}`, message],
       badOption: (message: string) => [message, 'Veja: prelum --help'],
@@ -79,6 +86,7 @@ export function messages(lang: Lang) {
         --cover, --no-cover      com ou sem capa (padrão: do frontmatter)
         --css <arquivo>          CSS extra depois do tema
         --html                   salva também o HTML intermediário
+        --pinned-browser         só o Chromium que o playwright-core espera
         --lang <en|pt>           idioma das mensagens
     -h, --help                   esta ajuda
     -v, --version                versão
@@ -93,6 +101,7 @@ export function messages(lang: Lang) {
       image: 'image',
       theme: 'theme',
       pages: 'pages',
+      browser: 'browser',
       html: 'html',
     },
     words: (count: number) => plural(count, 'word', 'words'),
@@ -118,6 +127,12 @@ export function messages(lang: Lang) {
       'no Chromium-based browser found (Chrome, Edge or Chromium)',
       'Run: npx playwright install chromium   (downloads Chromium once, ~150 MB)',
       'Or point PRELUM_CHROME to any Chromium-based browser executable.',
+    ],
+    pinnedBrowser: (expected: string, playwright: string, found?: string) => [
+      found
+        ? `the pinned browser is Chromium ${found}, but playwright-core ${playwright} expects ${expected}`
+        : `pinned browser not installed: Chromium ${expected} (from playwright-core ${playwright})`,
+      `Run: npx playwright@${playwright} install chromium   (downloads that build once, ~150 MB)`,
     ],
     renderFailed: (file: string, message: string) => [`could not render ${file}`, message],
     badOption: (message: string) => [message, 'See: prelum --help'],
@@ -145,6 +160,7 @@ export function messages(lang: Lang) {
         --cover, --no-cover      with or without a cover (default: from the frontmatter)
         --css <file>             extra CSS after the theme
         --html                   also save the intermediate HTML
+        --pinned-browser         only the Chromium build playwright-core expects
         --lang <en|pt>           language of messages
     -h, --help                   this help
     -v, --version                version

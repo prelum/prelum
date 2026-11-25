@@ -1,8 +1,14 @@
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
+import { chromium } from 'playwright-core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { browserCandidates, findPlaywrightChromium, playwrightCacheDir } from '../src/browser.ts';
+import {
+  browserCandidates,
+  findPlaywrightChromium,
+  pinnedChromium,
+  playwrightCacheDir,
+} from '../src/browser.ts';
 
 // A fake Playwright cache in a temp folder: no real browser needed to run these tests.
 let cache: string;
@@ -92,7 +98,7 @@ describe('browserCandidates', () => {
       '/home/ana',
     );
     expect(candidates).toEqual([
-      { label: '/opt/brave', options: { executablePath: '/opt/brave' } },
+      { label: '/opt/brave', name: 'Chromium', options: { executablePath: '/opt/brave' } },
     ]);
   });
 
@@ -106,5 +112,15 @@ describe('browserCandidates', () => {
   it('leaves the cache out when it has no Chromium', async () => {
     const candidates = await browserCandidates({ PLAYWRIGHT_BROWSERS_PATH: cache }, 'linux', '');
     expect(candidates.map((c) => c.label)).toEqual(['Chrome', 'Edge']);
+  });
+});
+
+describe('pinnedChromium', () => {
+  it('reads the build the installed playwright-core expects', () => {
+    const pinned = pinnedChromium();
+
+    expect(pinned.version).toMatch(/^\d+\.\d+\.\d+\.\d+$/);
+    expect(pinned.playwright).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(pinned.executablePath).toBe(chromium.executablePath());
   });
 });

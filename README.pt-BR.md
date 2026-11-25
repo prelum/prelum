@@ -106,11 +106,14 @@ lang: pt                        # en | pt: "Página 2 de 4" ou "Page 2 of 4", e 
 | `--cover`, `--no-cover` | do frontmatter | Com ou sem capa |
 | `--css <arquivo>` | | CSS extra depois do tema, para o caso raro em que o tema não basta |
 | `--html` | | Salva também o HTML intermediário |
+| `--pinned-browser` | | Imprime só com o Chromium que o Playwright instalado espera (veja abaixo) |
 | `--lang <en\|pt>` | do `LANG` | Idioma das mensagens no terminal |
 
-Códigos de saída: `0` pronto · `1` erro de entrada (arquivo, tema, frontmatter) · `2` erro ao gerar · `3` nenhum navegador encontrado.
+Códigos de saída: `0` pronto · `1` erro de entrada (arquivo, tema, frontmatter) · `2` erro ao gerar · `3` nenhum navegador encontrado, ou falta o navegador fixado.
 
 Defina [`SOURCE_DATE_EPOCH`](https://reproducible-builds.org/docs/source-date-epoch/) para gravar uma data fixa no PDF: o mesmo arquivo passa a gerar os mesmos bytes na mesma versão do navegador, o que deixa PDFs gerados estáveis no git. Outra versão do Chrome pode quebrar linhas de outro jeito; fixar o navegador está na [#17](https://github.com/prelum/prelum/issues/17).
+
+A garantia vale para a mesma entrada, as mesmas fontes (embutidas) e a mesma versão do navegador. Sem opção nenhuma, o prelum imprime com o navegador que já está na máquina, então duas máquinas com versões diferentes do Chrome podem quebrar linhas ou páginas de outro jeito. A versão usada aparece na saída e fica registrada no campo de criador do PDF (`prelum 0.2.0 · Chrome 151.0.7922.34`). Para os mesmos bytes entre máquinas e na CI, passe `--pinned-browser`: o prelum passa a usar só o Chromium que a versão dele do Playwright espera, e sai com código `3` se esse Chromium faltar ou informar outra versão. O erro mostra o comando que o instala.
 
 ## Como funciona
 

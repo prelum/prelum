@@ -33,14 +33,27 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run typecheck
-      # Includes the tests that open a real browser: ubuntu-latest ships with Google Chrome.
+
+      # The pinned tests and the examples print with the Chromium build playwright-core expects,
+      # not the runner's Chrome, which changes over time. Cached per playwright-core version.
+      - name: Read the playwright-core version
+        id: playwright
+        run: echo "version=$(node -p "require('playwright-core/package.json').version")" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: chromium-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+      # A no-op when the cache already has it.
+      - run: npx playwright-core install chromium
+
+      # Includes the tests that open a real browser: the runner's Chrome, and the pinned Chromium.
       - run: npm test
       - run: npm run build
 
       - name: Render the examples
         if: matrix.node == 24
         # Stamp the commit's date, not the clock's: the same commit always prints the same PDFs.
-        run: SOURCE_DATE_EPOCH=$(git log -1 --format=%ct) node dist/cli.js examples/*.md --out example-pdfs/
+        run: SOURCE_DATE_EPOCH=$(git log -1 --format=%ct) node dist/cli.js examples/*.md --out example-pdfs/ --pinned-browser
 
       - name: Attach the PDFs to this run
         if: matrix.node == 24

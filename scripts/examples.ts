@@ -1,5 +1,7 @@
 // Renders examples/*.md to PDFs next to them, plus PNG previews of their first pages for the
 // README. Run after changing a theme: npm run examples
+// Pinned to the Chromium build playwright-core expects, as on CI, so the PDFs match on any machine:
+// npx playwright install chromium
 import { readdir, readFile, writeFile } from 'node:fs/promises';
 import { basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -21,6 +23,7 @@ for (const file of files) {
   const result = await render(markdown, {
     baseDir: fileURLToPath(EXAMPLES),
     creationDate: CREATION_DATE,
+    pinnedBrowser: true,
   });
   await writeFile(new URL(`${name}.pdf`, EXAMPLES), result.pdf);
 
