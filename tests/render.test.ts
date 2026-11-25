@@ -101,6 +101,23 @@ describe('render', () => {
     expect(result.pages).toBe(1);
     expect(result.warnings).toMatchObject([{ kind: 'diagram-error' }]);
   });
+
+  it('warns when a wide diagram is scaled down too far to read', {
+    timeout: BROWSER_TEST_TIMEOUT,
+  }, async () => {
+    const small = 'flowchart LR\n  A --> B';
+    // Ten nodes in a line: far wider than the A4 text column.
+    const wide = `flowchart LR\n  ${'ABCDEFGHIJ'.split('').join(' --> ')}`;
+    const result = await render(
+      `\`\`\`mermaid\n${small}\n\`\`\`\n\n\`\`\`mermaid\n${wide}\n\`\`\``,
+    );
+
+    expect(result.warnings).toEqual([
+      { kind: 'diagram-scaled', diagram: 2, scale: expect.any(Number) },
+    ]);
+    const [warning] = result.warnings;
+    expect(warning?.kind === 'diagram-scaled' && warning.scale).toBeLessThan(0.8);
+  });
 });
 
 describe('fitHeader', () => {

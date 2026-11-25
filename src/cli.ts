@@ -184,7 +184,9 @@ async function convert(file: string, s: Settings): Promise<ExitCode> {
   if (result.diagrams > 0) row(ok, t.label.mermaid, t.diagrams(result.diagrams));
   for (const warning of result.warnings) {
     if (warning.kind === 'missing-image') row(warn, t.label.image, t.missingImage(warning.src));
-    else row(warn, t.label.mermaid, t.diagramError(firstLine(warning.message)));
+    else if (warning.kind === 'diagram-scaled') {
+      row(warn, t.label.mermaid, t.diagramScaled(warning.diagram, warning.scale));
+    } else row(warn, t.label.mermaid, t.diagramError(firstLine(warning.message)));
   }
   row(ok, t.label.theme, result.theme);
   row(ok, t.label.pages, t.pages(result.pages, result.cover));
