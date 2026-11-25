@@ -104,11 +104,14 @@ lang: en                        # en | pt: "Page 2 of 4" or "Página 2 de 4", an
 | `--cover`, `--no-cover` | from the frontmatter | With or without a cover |
 | `--css <file>` | | Extra CSS after the theme, for the rare case a theme is not enough |
 | `--html` | | Also save the intermediate HTML |
+| `--pinned-browser` | | Print only with the Chromium build the installed Playwright expects (see below) |
 | `--lang <en\|pt>` | from `LANG` | Language of the terminal messages |
 
-Exit codes: `0` done · `1` input error (file, theme, frontmatter) · `2` render error · `3` no browser found.
+Exit codes: `0` done · `1` input error (file, theme, frontmatter) · `2` render error · `3` no browser found, or the pinned one is missing.
 
 Set [`SOURCE_DATE_EPOCH`](https://reproducible-builds.org/docs/source-date-epoch/) to stamp a fixed date in the PDF: the same file then prints the same bytes, which keeps generated PDFs stable in git.
+
+The guarantee covers the same input, the same fonts (bundled) and the same browser version. Without a flag, prelum prints with the browser already on the machine, so two machines with different Chrome versions can break lines or pages differently. The version used is shown in the output and recorded in the PDF's creator field (`prelum 0.2.0 · Chrome 151.0.7922.34`). For the same bytes across machines and in CI, pass `--pinned-browser`: prelum then uses only the Chromium build its Playwright version expects, and exits with code `3` if that build is missing or reports another version. The error prints the command that installs it.
 
 ## How it works
 

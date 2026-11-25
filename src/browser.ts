@@ -1,10 +1,21 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { readdir } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { type Browser, chromium, type LaunchOptions } from 'playwright-core';
 
-export type Candidate = { label: string; options: LaunchOptions };
+/** `label` names the candidate in errors (a path for a cached Chromium); `name` is for display. */
+export type Candidate = { label: string; name: string; options: LaunchOptions };
+
+export type LaunchedBrowser = {
+  browser: Browser;
+  /** For display and the PDF metadata: "Chrome 151.0.7922.34". */
+  description: string;
+};
+
+/** The Chromium build the installed playwright-core was released with. */
+export type PinnedChromium = { version: string; playwright: string; executablePath: string };
 
 export class BrowserNotFoundError extends Error {
   readonly tried: { label: string; reason: string }[];
@@ -18,17 +29,75 @@ export class BrowserNotFoundError extends Error {
   }
 }
 
-/** Opens the first browser that works, in the order given by `browserCandidates`. */
-export async function launchBrowser(): Promise<{ browser: Browser; label: string }> {
+/** Pinned mode only: the expected Chromium is missing (`found` undefined) or reports another version. */
+export class PinnedBrowserError extends Error {
+  readonly expected: PinnedChromium;
+  readonly found: string | undefined;
+
+  constructor(expected: PinnedChromium, found?: string) {
+    super(
+      found
+        ? `Pinned browser reports Chromium ${found}, expected ${expected.version}`
+        : `Pinned browser Chromium ${expected.version} is not installed`,
+    );
+    this.name = 'PinnedBrowserError';
+    this.expected = expected;
+    this.found = found;
+  }
+}
+
+/**
+ * Opens the first browser that works, in the order given by `browserCandidates`. With `pinned`,
+ * opens only the Chromium that playwright-core expects, and fails on anything else: a different
+ * version can break lines and pages differently.
+ */
+export async function launchBrowser(options: { pinned?: boolean } = {}): Promise<LaunchedBrowser> {
+  if (options.pinned) return launchPinned(pinnedChromium());
+
   const tried: { label: string; reason: string }[] = [];
   for (const candidate of await browserCandidates()) {
     try {
-      return { browser: await chromium.launch(candidate.options), label: candidate.label };
+      const browser = await chromium.launch(candidate.options);
+      return { browser, description: `${candidate.name} ${browser.version()}` };
     } catch (error) {
       tried.push({ label: candidate.label, reason: firstLine(error) });
     }
   }
   throw new BrowserNotFoundError(tried);
+}
+
+async function launchPinned(expected: PinnedChromium): Promise<LaunchedBrowser> {
+  if (!existsSync(expected.executablePath)) throw new PinnedBrowserError(expected);
+
+  let browser: Browser;
+  try {
+    browser = await chromium.launch({ executablePath: expected.executablePath });
+  } catch {
+    throw new PinnedBrowserError(expected); // an interrupted or damaged download: install again
+  }
+  const found = browser.version();
+  if (found !== expected.version) {
+    await browser.close();
+    throw new PinnedBrowserError(expected, found);
+  }
+  return { browser, description: `Chromium ${found}` };
+}
+
+/**
+ * Read from playwright-core itself: `browsers.json` lists the build it was tested with, and
+ * `executablePath()` says where `playwright install chromium` puts it (PLAYWRIGHT_BROWSERS_PATH
+ * included). Nothing is downloaded here.
+ */
+export function pinnedChromium(): PinnedChromium {
+  const manifest = createRequire(import.meta.url).resolve('playwright-core/package.json');
+  const read = (file: string) => JSON.parse(readFileSync(join(dirname(manifest), file), 'utf8'));
+  const { version: playwright } = read('package.json') as { version: string };
+  const { browsers } = read('browsers.json') as {
+    browsers: { name: string; browserVersion: string }[];
+  };
+  const entry = browsers.find((browser) => browser.name === 'chromium');
+  if (!entry) throw new Error(`playwright-core ${playwright} lists no Chromium build`);
+  return { version: entry.browserVersion, playwright, executablePath: chromium.executablePath() };
 }
 
 /**
@@ -41,14 +110,22 @@ export async function browserCandidates(
   home: string = homedir(),
 ): Promise<Candidate[]> {
   if (env.PRELUM_CHROME) {
-    return [{ label: env.PRELUM_CHROME, options: { executablePath: env.PRELUM_CHROME } }];
+    return [
+      {
+        label: env.PRELUM_CHROME,
+        name: 'Chromium',
+        options: { executablePath: env.PRELUM_CHROME },
+      },
+    ];
   }
   const candidates: Candidate[] = [
-    { label: 'Chrome', options: { channel: 'chrome' } },
-    { label: 'Edge', options: { channel: 'msedge' } },
+    { label: 'Chrome', name: 'Chrome', options: { channel: 'chrome' } },
+    { label: 'Edge', name: 'Edge', options: { channel: 'msedge' } },
   ];
   const cached = await findPlaywrightChromium(playwrightCacheDir(env, platform, home), platform);
-  if (cached) candidates.push({ label: cached, options: { executablePath: cached } });
+  if (cached) {
+    candidates.push({ label: cached, name: 'Chromium', options: { executablePath: cached } });
+  }
   return candidates;
 }
 

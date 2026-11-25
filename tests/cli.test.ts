@@ -87,6 +87,17 @@ describe('prelum CLI', () => {
     expect(stderr).toContain('npx playwright install chromium');
   });
 
+  it('exits 3 when the pinned browser is not installed, with no fallback', async () => {
+    await writeFile(join(dir, 'a.md'), '# A');
+    // An empty browser cache: Chrome or Edge may be installed, but pinned mode must not use them.
+    const { code, stderr } = await prelum(['a.md', '--pinned-browser'], {
+      PLAYWRIGHT_BROWSERS_PATH: dir,
+    });
+    expect(code).toBe(3);
+    expect(stderr).toContain('pinned browser not installed');
+    expect(stderr).toMatch(/npx playwright@\d+\.\d+\.\d+ install chromium/);
+  });
+
   // Opens a real browser.
   it('writes the PDF next to the .md and reports in Portuguese', {
     timeout: BROWSER_TEST_TIMEOUT,
@@ -100,6 +111,7 @@ describe('prelum CLI', () => {
     expect(code).toBe(0);
     expect(stdout).toContain('4 palavras');
     expect(stdout).toContain('capa, 2 páginas');
+    expect(stdout).toMatch(/navegador +(Chrome|Edge|Chromium) \d+\./);
     expect(stdout).toMatch(/■ relatorio\.pdf pronto em \d+,\d s/);
     expect((await readFile(join(dir, 'relatorio.pdf'))).subarray(0, 5).toString()).toBe('%PDF-');
     expect(await readFile(join(dir, 'relatorio.html'), 'utf8')).toContain(

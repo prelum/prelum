@@ -10,6 +10,7 @@ import { fontFaceCss } from './fonts.ts';
 import { type Lang, markdownToHtml } from './markdown.ts';
 import { stampMetadata } from './pdf-metadata.ts';
 import { DEFAULT_THEME, loadTheme } from './themes.ts';
+import { version } from './version.ts';
 
 export type PaperFormat = 'A4' | 'Letter';
 
@@ -29,6 +30,8 @@ export type RenderOptions = {
   baseDir?: string;
   /** Date stamped in the PDF metadata. Defaults to now; fix it for reproducible output. */
   creationDate?: Date;
+  /** Print only with the Chromium build playwright-core expects, for the same bytes on any machine. */
+  pinnedBrowser?: boolean;
 };
 
 export type Warning =
@@ -47,6 +50,7 @@ export type Document = {
 export type RenderResult = Document & {
   pdf: Uint8Array;
   pages: number;
+  /** "Chrome 151.0.7922.34": also recorded in the PDF's /Creator. */
   browser: string;
   warnings: Warning[];
   ms: number;
@@ -72,7 +76,7 @@ export async function render(markdown: string, options: RenderOptions = {}): Pro
   const doc = await buildHtml(markdown, options);
 
   const dir = await mkdtemp(join(tmpdir(), 'prelum-'));
-  const { browser, label } = await launchBrowser();
+  const { browser, description } = await launchBrowser({ pinned: options.pinnedBrowser });
   try {
     // A real file, not setContent: an about:blank page may not load file:// images.
     const htmlPath = join(dir, 'document.html');
@@ -100,12 +104,12 @@ export async function render(markdown: string, options: RenderOptions = {}): Pro
       outline: true,
       tagged: true,
     });
-    const pdf = stampMetadata(printed, options.creationDate);
+    const pdf = stampMetadata(printed, options.creationDate, `prelum ${version} · ${description}`);
     return {
       ...doc,
       pdf,
       pages: countPages(pdf),
-      browser: label,
+      browser: description,
       warnings,
       ms: performance.now() - started,
     };
