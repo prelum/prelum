@@ -18,6 +18,7 @@ export function messages(lang: Lang) {
   const plural = (count: number, one: string, many: string) =>
     `${n(count)} ${count === 1 ? one : many}`;
   const list = (items: string[]) => items.join(', ');
+  const percent = (share: number) => `${Math.round(share * 100)}%`;
 
   if (lang === 'pt') {
     return {
@@ -36,6 +37,8 @@ export function messages(lang: Lang) {
         `${cover ? 'capa, ' : ''}${plural(count, 'página', 'páginas')}`,
       missingImage: (src: string) => `${src} não encontrada`,
       diagramError: (message: string) => `um diagrama não foi desenhado: ${message}`,
+      diagramScaled: (diagram: number, scale: number) =>
+        `diagrama ${n(diagram)} reduzido a ${percent(scale)}, o texto pode ficar difícil de ler`,
       ready: (file: string, ms: number) => `${file} pronto em ${seconds.format(ms / 1000)} s`,
       fileNotFound: (file: string) => [`arquivo não encontrado: ${file}`],
       cssNotFound: (file: string) => [`CSS não encontrado: ${file}`],
@@ -110,6 +113,8 @@ export function messages(lang: Lang) {
       `${cover ? 'cover, ' : ''}${plural(count, 'page', 'pages')}`,
     missingImage: (src: string) => `${src} not found`,
     diagramError: (message: string) => `a diagram was not drawn: ${message}`,
+    diagramScaled: (diagram: number, scale: number) =>
+      `diagram ${n(diagram)} scaled to ${percent(scale)}, text may be hard to read`,
     ready: (file: string, ms: number) => `${file} ready in ${seconds.format(ms / 1000)} s`,
     fileNotFound: (file: string) => [`file not found: ${file}`],
     cssNotFound: (file: string) => [`CSS file not found: ${file}`],

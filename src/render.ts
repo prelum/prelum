@@ -36,7 +36,9 @@ export type RenderOptions = {
 
 export type Warning =
   | { kind: 'missing-image'; src: string }
-  | { kind: 'diagram-error'; message: string };
+  | { kind: 'diagram-error'; message: string }
+  /** `diagram` counts from 1; `scale` is the printed width over the natural one (0.55 = 55%). */
+  | { kind: 'diagram-scaled'; diagram: number; scale: number };
 
 export type Document = {
   html: string;
@@ -95,7 +97,13 @@ export async function render(markdown: string, options: RenderOptions = {}): Pro
       if (error) warnings.push({ kind: 'diagram-error', message: error });
     }
     await page.evaluate(() => document.fonts.ready);
-    await fitFigures(page, doc.format);
+
+    // From here on the page is laid out at the printed text width, so measurements match the PDF.
+    const contentHeightMm = await usePrintLayout(page, doc.format);
+    if (contentHeightMm !== undefined) {
+      if (doc.diagrams > 0) warnings.push(...(await scaledDiagrams(page)));
+      await fitFigures(page, contentHeightMm);
+    }
 
     const printed = await page.pdf({
       printBackground: true,
@@ -280,9 +288,12 @@ const KEEP_WITH_NEXT_MM = 12;
  * figure shrinks to fit; otherwise it moves too. The spacers only serve the measurement and are
  * removed. Breaks are never forced: if the simulation is off, the result is the plain layout.
  */
-async function fitFigures(page: Page, format: PaperFormat): Promise<void> {
-  if (!(await page.evaluate(() => document.querySelector('figure img') !== null))) return;
-
+/**
+ * Print media and a viewport as wide as the page's text column, so the layout in the window is
+ * the one the PDF will get. Returns the text height of a page in mm, or undefined (and changes
+ * nothing) when the theme's margins cannot be read.
+ */
+async function usePrintLayout(page: Page, format: PaperFormat): Promise<number | undefined> {
   // The theme decides the margins: read them from its @page rule.
   const margins = await page.evaluate(() => {
     for (const sheet of document.styleSheets) {
@@ -298,16 +309,45 @@ async function fitFigures(page: Page, format: PaperFormat): Promise<void> {
   const mm = margins?.map((value) =>
     value.endsWith('mm') ? Number.parseFloat(value) : Number.NaN,
   );
-  if (!mm || mm.some(Number.isNaN)) return; // margins we cannot read: keep the plain layout
+  if (!mm || mm.some(Number.isNaN)) return undefined; // margins we cannot read: keep the plain layout
   const [top = 0, right = 0, bottom = 0, left = 0] = mm;
 
-  const pxPerMm = 96 / 25.4;
   const size = PAGE_MM[format];
   await page.emulateMedia({ media: 'print' });
   await page.setViewportSize({
-    width: Math.round((size.width - left - right) * pxPerMm),
+    width: Math.round(((size.width - left - right) * 96) / 25.4),
     height: 1000,
   });
+  return size.height - top - bottom;
+}
+
+/**
+ * Diagrams wider than the text column are scaled down, text included. Below this share of their
+ * natural width, the 12px labels drop under ~9.5px: still printed, but worth a warning.
+ */
+const MIN_DIAGRAM_SCALE = 0.8;
+
+/** Compares each diagram's printed width with its natural width (the SVG viewBox). */
+async function scaledDiagrams(page: Page): Promise<Warning[]> {
+  const scales = await page.evaluate(() =>
+    [...document.querySelectorAll('div.mermaid')].map((div) => {
+      const svg = div.querySelector('svg');
+      // A broken diagram becomes Mermaid's error graphic: already reported, not measured.
+      if (!svg || svg.getAttribute('aria-roledescription') === 'error') return 1;
+      const natural = svg.viewBox.baseVal?.width;
+      return natural ? svg.getBoundingClientRect().width / natural : 1;
+    }),
+  );
+  return scales.flatMap((scale, index) =>
+    scale < MIN_DIAGRAM_SCALE
+      ? [{ kind: 'diagram-scaled' as const, diagram: index + 1, scale }]
+      : [],
+  );
+}
+
+/** Needs the print layout (`usePrintLayout`). */
+async function fitFigures(page: Page, contentMm: number): Promise<void> {
+  if (!(await page.evaluate(() => document.querySelector('figure img') !== null))) return;
 
   await page.evaluate(
     ({ contentMm, minMm, minShare, keepMm }) => {
@@ -355,7 +395,7 @@ async function fitFigures(page: Page, format: PaperFormat): Promise<void> {
       for (const spacer of spacers) spacer.remove();
     },
     {
-      contentMm: size.height - top - bottom,
+      contentMm,
       minMm: FIT_MIN_MM,
       minShare: FIT_MIN_SHARE,
       keepMm: KEEP_WITH_NEXT_MM,
